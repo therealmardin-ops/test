@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Konsol penceresi olmayan, Windows Forms tabanlı bir uygulama -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <AssemblyName>OverlayCounter</AssemblyName>
+    <RootNamespace>OverlayCounter</RootNamespace>
+
+    <!-- Uygulama simgesi istenirse buraya eklenebilir (opsiyonel) -->
+    <!-- <ApplicationIcon>app.ico</ApplicationIcon> -->
+
+    <!-- Yüksek DPI ekranlarda düzgün görünüm için -->
+    <ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <!--
+    NOT: Bu proje herhangi bir NuGet paketine ihtiyaç duymaz.
+    System.Text.Json, .NET 8 ile birlikte gelen paylaşılan çatının (shared framework) 
+    bir parçasıdır ve ayrıca yüklenmesi gerekmez.
+  -->
+
+</Project>
