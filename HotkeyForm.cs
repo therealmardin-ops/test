@@ -40,6 +40,7 @@ namespace OverlayCounter
         // ---- Uygulama durumu ----
 
         private readonly string _dataFilePath;
+        private readonly string _logFilePath;
         private NotifyIcon? _trayIcon;
         private ContextMenuStrip? _trayMenu;
 
@@ -51,6 +52,11 @@ namespace OverlayCounter
             // data.json dosyasının EXE ile aynı klasörde olduğunu varsayıyoruz.
             // AppContext.BaseDirectory, çalışan EXE'nin bulunduğu klasörü verir.
             _dataFilePath = Path.Combine(AppContext.BaseDirectory, "data.json");
+            _logFilePath = Path.Combine(AppContext.BaseDirectory, "log.txt");
+
+            Log("=== Program başlatıldı ===");
+            Log("EXE klasörü: " + AppContext.BaseDirectory);
+            Log("data.json yolu: " + _dataFilePath);
 
             InitializeTrayIcon();
 
@@ -109,7 +115,12 @@ namespace OverlayCounter
         private void RegisterHotkeys()
         {
             bool ok1 = RegisterHotKey(this.Handle, HOTKEY_ID_INCREMENT, MOD_NONE, VK_F8);
+            int err1 = Marshal.GetLastWin32Error();
+            Log($"F8 kaydı: {(ok1 ? "BAŞARILI" : "BAŞARISIZ")} (Win32 hata kodu: {err1})");
+
             bool ok2 = RegisterHotKey(this.Handle, HOTKEY_ID_DECREMENT, MOD_NONE, VK_F9);
+            int err2 = Marshal.GetLastWin32Error();
+            Log($"F9 kaydı: {(ok2 ? "BAŞARILI" : "BAŞARISIZ")} (Win32 hata kodu: {err2})");
 
             if (!ok1 || !ok2)
             {
@@ -128,6 +139,7 @@ namespace OverlayCounter
             if (m.Msg == WM_HOTKEY)
             {
                 int hotkeyId = m.WParam.ToInt32();
+                Log($"WM_HOTKEY alındı, id={hotkeyId}");
 
                 try
                 {
@@ -144,6 +156,7 @@ namespace OverlayCounter
                 {
                     // Hotkey işlenirken oluşabilecek her türlü hatayı burada da yakalıyoruz
                     // ki program asla çökmesin.
+                    Log("HATA (WndProc): " + ex);
                     ShowBalloon("Hata", "İşlem sırasında hata oluştu:\n" + ex.Message);
                 }
             }
@@ -156,12 +169,18 @@ namespace OverlayCounter
         /// </summary>
         private void Increment()
         {
+            Log("Increment() çağrıldı (F8)");
             lock (_fileLock)
             {
                 var data = LoadData();
-                if (data == null) return;
+                if (data == null)
+                {
+                    Log("Increment: data null döndü, işlem iptal.");
+                    return;
+                }
 
                 data.current += 1;
+                Log($"Increment: yeni current = {data.current}");
 
                 if (SaveData(data))
                 {
@@ -175,13 +194,19 @@ namespace OverlayCounter
         /// </summary>
         private void Decrement()
         {
+            Log("Decrement() çağrıldı (F9)");
             lock (_fileLock)
             {
                 var data = LoadData();
-                if (data == null) return;
+                if (data == null)
+                {
+                    Log("Decrement: data null döndü, işlem iptal.");
+                    return;
+                }
 
                 // current asla negatif olamaz.
                 data.current = Math.Max(0, data.current - 1);
+                Log($"Decrement: yeni current = {data.current}");
 
                 if (SaveData(data))
                 {
@@ -201,6 +226,7 @@ namespace OverlayCounter
             {
                 if (!File.Exists(_dataFilePath))
                 {
+                    Log("LoadData: data.json bulunamadı: " + _dataFilePath);
                     ShowBalloon("Hata", $"data.json bulunamadı:\n{_dataFilePath}");
                     return null;
                 }
@@ -262,10 +288,12 @@ namespace OverlayCounter
                 // 2) Geçici dosyayı asıl dosyanın üzerine atomik olarak taşı (overwrite: true)
                 File.Move(tempFilePath, _dataFilePath, true);
 
+                Log("SaveData: data.json başarıyla yazıldı.");
                 return true;
             }
             catch (Exception ex)
             {
+                Log("HATA (SaveData): " + ex);
                 ShowBalloon("Hata", "data.json yazılırken hata oluştu:\n" + ex.Message);
 
                 // Yarım kalan geçici dosyayı temizlemeye çalış.
@@ -301,6 +329,23 @@ namespace OverlayCounter
             }
 
             _trayIcon.Text = text;
+        }
+
+        /// <summary>
+        /// Basit tanılama (debug) günlüğü: EXE ile aynı klasördeki log.txt dosyasına,
+        /// zaman damgasıyla birlikte bir satır ekler. Hata olsa bile programı etkilemez.
+        /// </summary>
+        private void Log(string message)
+        {
+            try
+            {
+                string line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}";
+                File.AppendAllText(_logFilePath, line);
+            }
+            catch
+            {
+                // Loglama başarısız olsa bile programın çalışmaya devam etmesi önemli.
+            }
         }
 
         /// <summary>
