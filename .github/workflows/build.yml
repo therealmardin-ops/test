@@ -1,0 +1,35 @@
+name: Build OverlayCounter
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Kodu indir
+        uses: actions/checkout@v4
+
+      - name: .NET 8 SDK kur
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Tek dosya (single-file) EXE olarak yayınla
+        run: >
+          dotnet publish OverlayCounter.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish_output
+
+      - name: Derlenen EXE'yi indirilebilir yap
+        uses: actions/upload-artifact@v4
+        with:
+          name: OverlayCounter-exe
+          path: publish_output/OverlayCounter.exe
