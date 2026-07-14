@@ -75,9 +75,19 @@ namespace OverlayCounter
             base.SetVisibleCore(false);
         }
 
-        protected override void OnLoad(EventArgs e)
+        /// <summary>
+        /// ÖNEMLİ: SetVisibleCore hep "false" döndürdüğü için form normalde hiç
+        /// görünür hale gelmiyor; bu da WinForms'ta OnLoad() olayının HİÇBİR ZAMAN
+        /// tetiklenmemesine yol açıyordu (kısayollar bu yüzden hiç kaydedilmiyordu).
+        /// OnHandleCreated ise formun görünürlüğünden bağımsız olarak, pencere
+        /// tanıtıcısı (Handle) oluşturulur oluşturulmaz KESİN olarak çalışır.
+        /// Bu yüzden kayıt işlemlerini buraya taşıdık.
+        /// </summary>
+        protected override void OnHandleCreated(EventArgs e)
         {
-            base.OnLoad(e);
+            base.OnHandleCreated(e);
+
+            Log("OnHandleCreated tetiklendi, Handle=" + this.Handle);
 
             // Form yüklendiğinde (pencere tanıtıcısı hazır olduğunda) kısayolları kaydet.
             RegisterHotkeys();
